@@ -6,6 +6,7 @@ const bodyParser = require('body-parser');
 const path = require('path')
 /*ta3tik info al ping ou fazet akeka ou type mta3 requete */
 const morgan = require('morgan')
+
 //app.use(morgan('dev'))
 
 /***********connection************** */

@@ -4,18 +4,30 @@ const path = require('path')
 const product = require("../models/product")
 const mongoose = require('mongoose')
 const bodyParser=require('body-parser')
+
 //router.use(express.urlencoded()); //t5alik tnajem ta9rra bady ki post  req.body.productid
 router.get('/',(req,res,next)=>{
   //  res.sendFile(path.join(__dirname+'/../../pages/'+'products.html'))
+  
   product.find()
+  .select('name price _id')
   .exec()
   .then(docs=>{
-      console.log(docs)
-      if(docs.length>0){
-        res.status(200).json(docs)
-      }else{
-      res.status(404).json({message:'no entreis found'})
-      }
+    const response = {
+        count: docs.length,
+        products:docs.map(doc=>{
+            return {
+                name:doc.name,
+                price:doc.price,
+                _id:doc.id,
+                url:{
+                    type:'GET',
+                    url:'http://localhost:3000/products/'+doc.id
+                }
+            }
+        })
+      };
+        res.status(200).json(response)
   })
   .catch(err=>{console.log(err)
     res.status(500).json({error:err})
@@ -23,19 +35,29 @@ router.get('/',(req,res,next)=>{
 });
 router.get('/:productid',(req,res,next)=>{
     const id = req.params.productid;
-    console.log("id")
-    product.findById(id).exec().
-    then(doc=>{console.log(doc)
+    product.findById(id)
+    .select('name price _id')
+    .exec().
+    then(doc=>{
         if(doc){
-            res.status(200).json(doc)
+            
+          const responses = {
+            count: doc.length,
+            products:{
+                name:doc.name,
+                price:doc.price,
+                _id:doc.id
+            }
+          };
+          
+            res.status(200).json(responses)
         }else{
-            res.status(404).json({message:"no valid entry"})
-        }
+           res.status(404).json({message:"no valid entry"})
+       }
     
     }).
     catch(err=>{
-        //console.log(err)
-        res.status(500).json({error:err})
+        res.status(404).json({error:err})
     });
 });
 router.post('/',(req,res,next)=>{
@@ -47,8 +69,16 @@ router.post('/',(req,res,next)=>{
         products.save().then((resault)=>{
          console.log(resault)
          res.status(201).json({
-            message:'handling post requests to products',
-           createdproduct:resault
+            message:'Created product successfully',
+           createdproduct:{
+               name:resault.name,
+               price:resault.price,
+               _id:resault._id,
+               request:{
+                type:"get",
+                url:'http://localhost:3000/products/'+resault._id
+               }
+           }
         })
         }).catch(err=>{
             console.log(err)
@@ -57,22 +87,19 @@ router.post('/',(req,res,next)=>{
 
 })
 router.patch('/:productId',(req,res)=>{
-  
    var id = req.params.productId;
 
-   const updateops = {};
-
-   for (const ops of req.body){
-    updateops[ops.proName] = ops.value;
+   
+   const updateops = {
+       "name":req.body.name,
+       "price":req.body.price
    }
-  
-    product.update({_id:id},{$set:updateops})
+
+  console.log(updateops)
+    product.updateOne({_id:id},{$set:updateops})
     .exec()
     .then(result=>{
-        console.log(result)
-        res.status(200).json({
-            result
-        })
+        res.status(200).json(result)
     })
     .catch(err=>{
         console.log(err)
@@ -94,3 +121,4 @@ router.delete('/:productId',(req,res)=>{
     });
 })
 module.exports = router;
+//validation ou tarji 7aja mezyean mouch kol chay
