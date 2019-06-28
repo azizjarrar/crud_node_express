@@ -1,16 +1,37 @@
 const express = require('express');
 const router  =  express.Router();
-const path = require('path')
 const product = require("../models/product")
 const mongoose = require('mongoose')
-const bodyParser=require('body-parser')
+//const bodyParser=require('body-parser')
+const multer = require('multer');
+const storage = multer.diskStorage({
+    destination:function(req,file,cb){
+        cb(null,'uploads/')
+    },
+    filename:function(req,file,cb){
+        //originalname
+        cb(null,file.originalname)
+    }
+})
+const filefilter = (req,file,cb)=>{
+    // reject file 
+    if(file.mimetype === 'image/jpeg' || file.mimetype === 'image/png'){
+    cb(null,true);
+    }else{
+        cb(new error('error'),false)
+    }
 
+}
+const upload = multer({storage:storage,limits:{
+    fileSize:1024 * 1024 * 5,
+    filefilter:filefilter
+}});
 //router.use(express.urlencoded()); //t5alik tnajem ta9rra bady ki post  req.body.productid
 router.get('/',(req,res,next)=>{
   //  res.sendFile(path.join(__dirname+'/../../pages/'+'products.html'))
   
   product.find()
-  .select('name price _id')
+  .select('name price _id productimage')
   .exec()
   .then(docs=>{
     const response = {
@@ -19,6 +40,7 @@ router.get('/',(req,res,next)=>{
             return {
                 name:doc.name,
                 price:doc.price,
+                productimage:doc.productimage,
                 _id:doc.id,
                 url:{
                     type:'GET',
@@ -36,7 +58,7 @@ router.get('/',(req,res,next)=>{
 router.get('/:productid',(req,res,next)=>{
     const id = req.params.productid;
     product.findById(id)
-    .select('name price _id')
+    .select('name price _id productimage')
     .exec().
     then(doc=>{
         if(doc){
@@ -60,11 +82,14 @@ router.get('/:productid',(req,res,next)=>{
         res.status(404).json({error:err})
     });
 });
-router.post('/',(req,res,next)=>{
-        const products = new product({
+router.post('/',upload.single('productimage'),(req,res,next)=>{
+
+            console.log(req.file)
+            const products = new product({
             _id:new mongoose.Types.ObjectId(),
             name:req.body.name,
-            price:req.body.price
+            price:req.body.price,
+            productimage:req.file.path
         });
         products.save().then((resault)=>{
          console.log(resault)
