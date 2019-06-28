@@ -7,6 +7,7 @@ router.get('/',(req,res)=>{
     Order
     .find()
     .select('quantity product _id')
+    .populate('product','name')//kif jointeur traja3lk product mil  collection lo5ra
     .exec()
     .then(result=>{
         res.status(201).json({
