@@ -3,6 +3,48 @@ const router  =  express.Router();
 const mongoose = require('mongoose')
 const Userr = require('../models/user')
 const bcrypt = require('bcrypt')
+const jwt = require('jsonwebtoken')
+const ENV = require('dotenv')
+ENV.config();
+router.post('/login',(req,res)=>{
+    Userr.find({email:req.body.email}) //find kahaw traja3 array lazm ta3ml user[0]
+    .exec()
+    .then((user)=>{
+        if(user.length<1){
+            return res.status(401).json({message:"auth failed"})
+        }else{
+           bcrypt.compare(req.body.password,user[0].password,(err,result)=>{
+                console.log("========"+process.env.JWT_KEY)
+               if(result){
+                   const token = jwt.sign({
+                     email:user[0].email,
+                     userid:user[0]._id
+                   },process.env.JWT_KEY,{
+                       expiresIn:"1h"
+                   }
+                   )
+                return res.status(401).json({
+                    message:"auth successful",
+                    token:token
+                })
+               }else{
+                res.status(401).json({
+                    message:'auth failed'
+                })
+               }
+           })
+        }
+    })
+    .catch((err)=>{
+        console.log(err)
+        res.status(500).json({
+            error:err
+        })
+    })
+
+
+
+})
 router.post('/signup',(req,res,next)=>{
     Userr.find({email:req.body.email})
         .exec()
